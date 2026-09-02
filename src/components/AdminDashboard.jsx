@@ -3,8 +3,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { exportAttendanceToExcel } from '../utils/excelExport';
 import { 
   Bus, Users, AlertTriangle, Navigation, FileSpreadsheet, Download, 
-  Search, Filter, Plus, Trash2, Edit2, Phone, MessageSquare, Check, 
-  CheckCircle, X, Shield, Settings as SettingsIcon, Save
+  Search, Filter, Plus, Trash2, Phone, MessageSquare, Check, 
+  CheckCircle, X, Shield, Settings as SettingsIcon, Printer, 
+  Route, ShieldCheck, Activity, MapPin, Gauge
 } from 'lucide-react';
 
 export default function AdminDashboard({ 
@@ -43,9 +44,11 @@ export default function AdminDashboard({
 
   // تجهيز بيانات التقارير
   const filteredLogs = students.filter(std => {
+    const bus = buses.find(b => b.id === std.busId);
+    const busName = bus ? bus.number : '';
     const matchesFilter = reportFilter === 'all' || std.status === reportFilter;
     const matchesSearch = std.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (std.busNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          busName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           std.grade.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
@@ -72,25 +75,30 @@ export default function AdminDashboard({
     }, 400);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-6">
       
-      {/* تبويبات المشرف العام الفرعية */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+      {/* تبويبات الإدارة العلوية */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 no-print">
         <button
           onClick={() => setActiveSubTab('overview')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 ${
             activeSubTab === 'overview' 
               ? 'bg-slate-900 text-white shadow-sm' 
               : 'text-slate-600 hover:bg-slate-200'
           }`}
         >
-          {t('stats.movingBuses')} & {t('alerts.title')}
+          <Activity size={15} />
+          <span>{t('nav.dashboard')}</span>
         </button>
 
         <button
           onClick={() => setActiveSubTab('reports')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 ${
             activeSubTab === 'reports' 
               ? 'bg-slate-900 text-white shadow-sm' 
               : 'text-slate-600 hover:bg-slate-200'
@@ -102,7 +110,7 @@ export default function AdminDashboard({
 
         <button
           onClick={() => setActiveSubTab('settings')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 ${
             activeSubTab === 'settings' 
               ? 'bg-slate-900 text-white shadow-sm' 
               : 'text-slate-600 hover:bg-slate-200'
@@ -122,40 +130,48 @@ export default function AdminDashboard({
           {/* كروت الإحصائيات (Stats Cards) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-xs font-bold">{t('stats.totalBuses')}</span>
-                <Bus size={18} className="text-emerald-600" />
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Bus size={18} />
+                </div>
               </div>
               <p className="text-2xl font-black text-slate-800">{totalBuses}</p>
-              <p className="text-[10px] text-emerald-600 font-semibold mt-1">2 قيد العمل الآن</p>
+              <p className="text-[10px] text-emerald-600 font-semibold mt-1">2 قيد العمل الآن 🟢</p>
             </div>
 
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-xs font-bold">{t('stats.totalStudents')}</span>
-                <Users size={18} className="text-blue-600" />
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Users size={18} />
+                </div>
               </div>
               <p className="text-2xl font-black text-slate-800">{totalStudents}</p>
               <p className="text-[10px] text-blue-600 font-semibold mt-1">{boardedCount} بالحافلات حالياً</p>
             </div>
 
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-xs font-bold">{t('stats.absentToday')}</span>
-                <X size={18} className="text-rose-600" />
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <X size={18} />
+                </div>
               </div>
               <p className="text-2xl font-black text-rose-600">{absentToday}</p>
-              <p className="text-[10px] text-rose-500 font-semibold mt-1">تم توثيق الغياب</p>
+              <p className="text-[10px] text-rose-500 font-semibold mt-1">تم توثيق الغياب 🔴</p>
             </div>
 
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-xs font-bold">{t('stats.activeTrips')}</span>
-                <Navigation size={18} className="text-teal-600" />
+                <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                  <Navigation size={18} />
+                </div>
               </div>
               <p className="text-2xl font-black text-teal-700">{activeTripsCount}</p>
-              <p className="text-[10px] text-teal-600 font-semibold mt-1">رحلات عودة للمنازل</p>
+              <p className="text-[10px] text-teal-600 font-semibold mt-1">رحلات عودة للمنازل 🚌</p>
             </div>
 
           </div>
@@ -221,12 +237,15 @@ export default function AdminDashboard({
             </div>
           )}
 
-          {/* بطاقات الحافلات وحالة الرحلات */}
+          {/* بطاقات الحافلات ومتابعة الأسطول والمسارات */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <Bus size={18} className="text-emerald-600" />
-              <span>متابعة حالة الحافلات على المسار</span>
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <Route size={18} className="text-emerald-600" />
+                <span>متابعة حركة الحافلات والمسارات والأحياء</span>
+              </h2>
+              <span className="text-xs text-slate-400">تحديث لحظي 🟢</span>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {buses.map(b => (
@@ -235,12 +254,12 @@ export default function AdminDashboard({
                     <span className="font-bold text-slate-800 text-sm">{b.number}</span>
                     <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono font-bold">{b.plate}</span>
                   </div>
-                  <p className="text-xs text-slate-500"><strong>المسار:</strong> {b.route}</p>
+                  <p className="text-xs text-slate-600"><strong>المسار:</strong> {b.route}</p>
+                  <p className="text-xs text-slate-500"><strong>الأحياء:</strong> {b.districts}</p>
                   <p className="text-xs text-slate-500"><strong>السائق:</strong> {b.driver}</p>
-                  <p className="text-xs text-slate-500"><strong>المرافقة:</strong> {b.attendant}</p>
                   <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-semibold">
                     <span className="text-slate-400">السعة: {b.capacity} طالب</span>
-                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">رحلة نشطة ✅</span>
+                    <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold">رحلة نشطة ✅</span>
                   </div>
                 </div>
               ))}
@@ -265,19 +284,29 @@ export default function AdminDashboard({
               <p className="text-xs text-slate-400 mt-0.5">{t('reports.subtitle')}</p>
             </div>
 
-            {/* زر التصدير إلى Excel (.xlsx) */}
-            <button
-              onClick={handleExportExcel}
-              disabled={isExporting}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
-            >
-              <Download size={16} />
-              <span>{isExporting ? t('reports.exporting') : t('reports.exportExcel')}</span>
-            </button>
+            {/* أزرار التصدير والطباعة */}
+            <div className="flex items-center gap-2 no-print">
+              <button
+                onClick={handlePrint}
+                className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <Printer size={15} />
+                <span>{t('reports.printReport')}</span>
+              </button>
+
+              <button
+                onClick={handleExportExcel}
+                disabled={isExporting}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5"
+              >
+                <Download size={15} />
+                <span>{isExporting ? t('reports.exporting') : t('reports.exportExcel')}</span>
+              </button>
+            </div>
           </div>
 
           {/* شريط الفلاتر والبحث */}
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3 no-print">
             <div className="relative flex-1 w-full">
               <input
                 type="text"
@@ -319,28 +348,35 @@ export default function AdminDashboard({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredLogs.map((std, idx) => (
-                  <tr key={std.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="p-3 font-bold text-slate-400">{idx + 1}</td>
-                    <td className="p-3 font-bold text-slate-800">{std.name}</td>
-                    <td className="p-3 text-slate-500">{std.grade}</td>
-                    <td className="p-3 font-semibold text-slate-700">حافلة 12</td>
-                    <td className="p-3">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                        std.status === 'boarded' ? 'bg-emerald-100 text-emerald-800' :
-                        std.status === 'delivered' ? 'bg-blue-100 text-blue-800' :
-                        std.status === 'absent' ? 'bg-rose-100 text-rose-800' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {std.status === 'boarded' ? '🚌 ركب الحافلة' :
-                         std.status === 'delivered' ? '✅ تم التسليم' :
-                         std.status === 'absent' ? '🔴 غائب' : 'في الانتظار'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-slate-400 font-mono">01:15 م</td>
-                    <td className="p-3 font-mono text-slate-600">{std.fatherPhone}</td>
-                  </tr>
-                ))}
+                {filteredLogs.map((std, idx) => {
+                  const bus = buses.find(b => b.id === std.busId);
+                  return (
+                    <tr key={std.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 font-bold text-slate-400">{idx + 1}</td>
+                      <td className="p-3 font-bold text-slate-800">{std.name}</td>
+                      <td className="p-3 text-slate-500">{std.grade}</td>
+                      <td className="p-3 font-semibold text-slate-700">
+                        <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-bold">
+                          {bus ? bus.number : 'حافلة 12'}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          std.status === 'boarded' ? 'bg-emerald-100 text-emerald-800' :
+                          std.status === 'delivered' ? 'bg-blue-100 text-blue-800' :
+                          std.status === 'absent' ? 'bg-rose-100 text-rose-800' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {std.status === 'boarded' ? '🚌 ركب الحافلة' :
+                           std.status === 'delivered' ? '✅ تم التسليم' :
+                           std.status === 'absent' ? '🔴 غائب' : 'في الانتظار'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-slate-400 font-mono">01:15 م</td>
+                      <td className="p-3 font-mono text-slate-600">{std.fatherPhone}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -363,10 +399,10 @@ export default function AdminDashboard({
             </div>
 
             {/* محدد قسم الإعدادات */}
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl text-xs font-bold">
               <button
                 onClick={() => setSettingsSubTab('buses')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl transition-all ${
                   settingsSubTab === 'buses' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'
                 }`}
               >
@@ -374,7 +410,7 @@ export default function AdminDashboard({
               </button>
               <button
                 onClick={() => setSettingsSubTab('staff')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl transition-all ${
                   settingsSubTab === 'staff' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'
                 }`}
               >
@@ -382,7 +418,7 @@ export default function AdminDashboard({
               </button>
               <button
                 onClick={() => setSettingsSubTab('students')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl transition-all ${
                   settingsSubTab === 'students' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'
                 }`}
               >
@@ -398,7 +434,7 @@ export default function AdminDashboard({
                 <span className="text-xs font-bold text-slate-500">قائمة الحافلات المسجلة بالنظام:</span>
                 <button
                   onClick={() => setShowAddBusModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
                 >
                   <Plus size={15} />
                   <span>{t('settings.addBus')}</span>
@@ -446,7 +482,7 @@ export default function AdminDashboard({
                 <span className="text-xs font-bold text-slate-500">قائمة السائقين والمشرفات:</span>
                 <button
                   onClick={() => setShowAddStaffModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
                 >
                   <Plus size={15} />
                   <span>{t('settings.addStaff')}</span>
@@ -465,39 +501,27 @@ export default function AdminDashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {staffList ? staffList.map(st => (
-                      <tr key={st.id} className="hover:bg-slate-50/60">
-                        <td className="p-3 font-bold text-slate-800">{st.full_name || st.name}</td>
-                        <td className="p-3 font-mono text-slate-600">{st.national_id}</td>
-                        <td className="p-3 font-mono text-slate-600">{st.phone}</td>
-                        <td className="p-3 font-bold text-emerald-700">{st.role}</td>
-                        <td className="p-3 text-slate-600">حافلة 12</td>
-                      </tr>
-                    )) : (
-                      <>
-                        <tr>
-                          <td className="p-3 font-bold">الكابتن أحمد الشمري</td>
-                          <td className="p-3 font-mono">1000000004</td>
-                          <td className="p-3 font-mono">0501110004</td>
-                          <td className="p-3 font-bold text-emerald-700">سائق حافلة</td>
-                          <td className="p-3">حافلة 12</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold">أم أحمد العتيبي</td>
-                          <td className="p-3 font-mono">1000000003</td>
-                          <td className="p-3 font-mono">0501110003</td>
-                          <td className="p-3 font-bold text-blue-700">مرافقة حافلة</td>
-                          <td className="p-3">حافلة 12</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold">أ. سارة المنصور</td>
-                          <td className="p-3 font-mono">1000000002</td>
-                          <td className="p-3 font-mono">0501110002</td>
-                          <td className="p-3 font-bold text-purple-700">مشرفة مدرسة</td>
-                          <td className="p-3">جميع الحافلات</td>
-                        </tr>
-                      </>
-                    )}
+                    <tr>
+                      <td className="p-3 font-bold">الكابتن أحمد الشمري</td>
+                      <td className="p-3 font-mono">1000000004</td>
+                      <td className="p-3 font-mono">0501110004</td>
+                      <td className="p-3 font-bold text-emerald-700">سائق حافلة</td>
+                      <td className="p-3">حافلة 12</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold">أم أحمد العتيبي</td>
+                      <td className="p-3 font-mono">1000000003</td>
+                      <td className="p-3 font-mono">0501110003</td>
+                      <td className="p-3 font-bold text-blue-700">مرافقة حافلة</td>
+                      <td className="p-3">حافلة 12</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-bold">أ. سارة المنصور</td>
+                      <td className="p-3 font-mono">1000000002</td>
+                      <td className="p-3 font-mono">0501110002</td>
+                      <td className="p-3 font-bold text-purple-700">مشرفة مدرسة</td>
+                      <td className="p-3">جميع الحافلات</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -508,10 +532,10 @@ export default function AdminDashboard({
           {settingsSubTab === 'students' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500">قائمة الطلاب والتسلسل الجغرافي (geo_order):</span>
+                <span className="text-xs font-bold text-slate-500">قائمة الطلاب وتوزيع الحافلات والتسلسل (geo_order):</span>
                 <button
                   onClick={() => setShowAddStudentModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
                 >
                   <Plus size={15} />
                   <span>{t('settings.addStudent')}</span>
@@ -525,22 +549,29 @@ export default function AdminDashboard({
                       <th className="p-3">{t('settings.sequence')}</th>
                       <th className="p-3">{t('reports.studentName')}</th>
                       <th className="p-3">{t('reports.grade')}</th>
+                      <th className="p-3">{t('settings.assignedBus')}</th>
                       <th className="p-3">{t('settings.fatherPhone')}</th>
-                      <th className="p-3">{t('settings.motherPhone')}</th>
                       <th className="p-3">العنوان</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {students.map(std => (
-                      <tr key={std.id} className="hover:bg-slate-50/60">
-                        <td className="p-3 font-black text-emerald-700">#{std.sequence}</td>
-                        <td className="p-3 font-bold text-slate-800">{std.name}</td>
-                        <td className="p-3 text-slate-500">{std.grade}</td>
-                        <td className="p-3 font-mono text-slate-600">{std.fatherPhone}</td>
-                        <td className="p-3 font-mono text-slate-600">{std.motherPhone}</td>
-                        <td className="p-3 text-slate-500">{std.address}</td>
-                      </tr>
-                    ))}
+                    {students.map(std => {
+                      const bus = buses.find(b => b.id === std.busId);
+                      return (
+                        <tr key={std.id} className="hover:bg-slate-50/60">
+                          <td className="p-3 font-black text-emerald-700">#{std.sequence}</td>
+                          <td className="p-3 font-bold text-slate-800">{std.name}</td>
+                          <td className="p-3 text-slate-500">{std.grade}</td>
+                          <td className="p-3 font-bold text-slate-700">
+                            <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded">
+                              {bus ? bus.number : 'حافلة 12'}
+                            </span>
+                          </td>
+                          <td className="p-3 font-mono text-slate-600">{std.fatherPhone}</td>
+                          <td className="p-3 text-slate-500">{std.address}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -551,7 +582,7 @@ export default function AdminDashboard({
       )}
 
       {/* ========================================================= */}
-      {/* نوافذ الإضافة المنبثقة (Add Modals)                       */}
+      {/* نوافذ الإضافة المنبثقة                                     */}
       {/* ========================================================= */}
 
       {/* مودال إضافة حافلة */}

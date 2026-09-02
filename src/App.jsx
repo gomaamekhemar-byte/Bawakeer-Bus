@@ -98,10 +98,12 @@ function MainApp() {
   };
 
   // بدء رحلة جديدة
-  const handleStartTrip = (odometer, type) => {
+  const handleStartTrip = (odometer, type, chosenBus) => {
+    const busObj = chosenBus || buses[0];
     setTrip({
       isActive: true,
-      busNumber: 'حافلة 12',
+      busId: busObj.id,
+      busNumber: busObj.number,
       driverName: currentUser?.name || 'الكابتن أحمد',
       type,
       typeName: type === 'morning' ? 'رحلة صباحية (للمدرسة)' : type === 'afternoon' ? 'رحلة العودة (للمنازل)' : 'خدمات خارجية',
@@ -110,7 +112,7 @@ function MainApp() {
       endOdometer: null,
       totalDistance: null
     });
-    showToast('🚀 تم بدء الرحلة وتسجيل قراءة العداد بنجاح!');
+    showToast(`🚀 تم بدء رحلة ${busObj.number} (${busObj.route}) بنجاح!`);
   };
 
   // إنهاء الرحلة وحساب المسافة
@@ -202,6 +204,7 @@ function MainApp() {
           {/* 3. شاشة سائق الحافلة / المرافقة */}
           {(currentTab === 'driver-view' || currentTab === 'driver-preview' || currentTab === 'attendant-view') && (
             <DriverView 
+              buses={buses}
               trip={trip}
               students={students}
               onStartTrip={handleStartTrip}
