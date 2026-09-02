@@ -16,6 +16,12 @@ const INITIAL_BUSES = [
   { id: 'bus-3', number: 'حافلة 05', plate: 'م ن هـ 9012', capacity: 20, route: 'مسار شرق الرياض', districts: 'الرمال، المونسية، اليرموك', status: 'maintenance', driver: 'الكابتن فهد المطيري', attendant: 'أم خالد الحربي' }
 ];
 
+const INITIAL_STAFF = [
+  { id: 'staff-1', national_id: '1000000004', full_name: 'الكابتن أحمد الشمري', name: 'الكابتن أحمد الشمري', phone: '0501110004', role: 'driver', busId: 'bus-1' },
+  { id: 'staff-2', national_id: '1000000003', full_name: 'أم أحمد العتيبي', name: 'أم أحمد العتيبي', phone: '0501110003', role: 'attendant', busId: 'bus-1' },
+  { id: 'staff-3', national_id: '1000000002', full_name: 'أ. سارة المنصور', name: 'أ. سارة المنصور', phone: '0501110002', role: 'school_supervisor', busId: 'bus-1' }
+];
+
 const INITIAL_STUDENTS = [
   { id: 'std-1', busId: 'bus-1', name: 'عبدالرحمن خالد العتيبي', grade: 'الرابع الابتدائي (أ)', sequence: 1, address: 'حي النرجس - شارع 14 - فيلا 6', lat: 24.8234, lng: 46.6543, fatherPhone: '0501112233', motherPhone: '0551112233', receiver: 'الأب (خالد العتيبي)', status: 'boarded' },
   { id: 'std-2', busId: 'bus-1', name: 'سارة محمد القحطاني', grade: 'الثالث الابتدائي (ب)', sequence: 2, address: 'حي الياسمين - شارع 22 - فيلا 18', lat: 24.8150, lng: 46.6420, fatherPhone: '0554445566', motherPhone: '0544445566', receiver: 'الأم (منيرة السبيعي)', status: 'boarded' },
@@ -36,6 +42,7 @@ function MainApp() {
   
   // بيانات المنظومة
   const [buses, setBuses] = useState(INITIAL_BUSES);
+  const [staffList, setStaffList] = useState(INITIAL_STAFF);
   const [students, setStudents] = useState(INITIAL_STUDENTS);
   const [alerts, setAlerts] = useState(INITIAL_ALERTS);
   const [toastMessage, setToastMessage] = useState(null);
@@ -43,6 +50,7 @@ function MainApp() {
   // حالة رحلة السائق
   const [trip, setTrip] = useState({
     isActive: true,
+    busId: 'bus-1',
     busNumber: 'حافلة 12',
     driverName: 'الكابتن أحمد الشمري',
     type: 'afternoon',
@@ -78,7 +86,7 @@ function MainApp() {
     setCurrentUser(userData);
     if (userData.role === 'admin' || userData.role === 'general_admin') {
       setCurrentTab('dashboard');
-    } else if (userData.role === 'supervisor' || userData.role === 'school_supervisor') {
+    } else if (userData.role === 'supervisor' || userData.role === 'school_supervisor' || userData.role === 'bus_supervisor') {
       setCurrentTab('supervisor-view');
     } else if (userData.role === 'driver') {
       setCurrentTab('driver-view');
@@ -174,9 +182,11 @@ function MainApp() {
         {/* جسم الصفحة الرئيسي */}
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           
-          {/* 1. لوحة المشرف العام */}
+          {/* 1. لوحة تحكم المشرف العام / المدير */}
           {(currentTab === 'dashboard' || currentTab === 'reports' || currentTab === 'settings') && (
             <AdminDashboard 
+              currentTab={currentTab}
+              onSelectTab={setCurrentTab}
               buses={buses}
               students={students}
               alerts={alerts}
@@ -184,9 +194,12 @@ function MainApp() {
                 setAlerts(prev => prev.filter(a => a.id !== id));
                 showToast('✅ تم توثيق المتابعة مع الأسرة.');
               }}
-              onAddBus={(b) => { setBuses(prev => [...prev, b]); showToast('تمت إضافة الحافلة'); }}
+              onAddBus={(b) => { setBuses(prev => [...prev, b]); showToast('✅ تمت إضافة الحافلة بنجاح'); }}
               onDeleteBus={(id) => { setBuses(prev => prev.filter(b => b.id !== id)); showToast('تم حذف الحافلة'); }}
-              onAddStudent={(s) => { setStudents(prev => [...prev, s]); showToast('تمت إضافة الطالب'); }}
+              staffList={staffList}
+              onAddStaff={(st) => { setStaffList(prev => [...prev, st]); showToast('✅ تمت إضافة الموظف وربطه بالحافلة'); }}
+              onDeleteStaff={(id) => { setStaffList(prev => prev.filter(st => st.id !== id)); showToast('تم حذف الموظف'); }}
+              onAddStudent={(s) => { setStudents(prev => [...prev, s]); showToast('✅ تمت إضافة الطالب وتخصيص الحافلة بنجاح'); }}
               onDeleteStudent={(id) => { setStudents(prev => prev.filter(s => s.id !== id)); showToast('تم حذف الطالب'); }}
             />
           )}

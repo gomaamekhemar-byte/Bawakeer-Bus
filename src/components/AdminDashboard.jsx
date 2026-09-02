@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { exportAttendanceToExcel } from '../utils/excelExport';
 import { 
   Bus, Users, AlertTriangle, Navigation, FileSpreadsheet, Download, 
   Search, Filter, Plus, Trash2, Phone, MessageSquare, Check, 
   CheckCircle, X, Shield, Settings as SettingsIcon, Printer, 
-  Route, ShieldCheck, Activity, MapPin, Gauge
+  Route, ShieldCheck, Activity, MapPin, Gauge, UserCheck, ShieldAlert
 } from 'lucide-react';
 
 export default function AdminDashboard({ 
-  buses, students, alerts, onResolveAlert, onAddBus, onDeleteBus, 
-  onAddStaff, onDeleteStaff, staffList, onAddStudent, onDeleteStudent 
+  currentTab, onSelectTab, buses, students, alerts, onResolveAlert, 
+  onAddBus, onDeleteBus, staffList, onAddStaff, onDeleteStaff, 
+  onAddStudent, onDeleteStudent 
 }) {
   const { t, isRTL } = useLanguage();
+  
+  // مزامنة التبويب الحالي مع القائمة الجانبية
   const [activeSubTab, setActiveSubTab] = useState('overview'); // overview, reports, settings
   const [settingsSubTab, setSettingsSubTab] = useState('buses'); // buses, staff, students
+
+  useEffect(() => {
+    if (currentTab === 'reports') {
+      setActiveSubTab('reports');
+    } else if (currentTab === 'settings') {
+      setActiveSubTab('settings');
+    } else if (currentTab === 'dashboard') {
+      setActiveSubTab('overview');
+    }
+  }, [currentTab]);
+
+  const handleTabChange = (tabId) => {
+    setActiveSubTab(tabId);
+    if (onSelectTab) {
+      if (tabId === 'overview') onSelectTab('dashboard');
+      if (tabId === 'reports') onSelectTab('reports');
+      if (tabId === 'settings') onSelectTab('settings');
+    }
+  };
 
   // حالات فلترة التقارير
   const [reportFilter, setReportFilter] = useState('all');
@@ -26,11 +48,13 @@ export default function AdminDashboard({
   const [newBus, setNewBus] = useState({ number: '', plate: '', capacity: 25, route: '', districts: '' });
 
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
-  const [newStaff, setNewStaff] = useState({ name: '', national_id: '', phone: '', role: 'driver', busId: '' });
+  const [newStaff, setNewStaff] = useState({ 
+    name: '', national_id: '', phone: '', role: 'driver', busId: buses[0]?.id || 'bus-1' 
+  });
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [newStudent, setNewStudent] = useState({ 
-    name: '', grade: '', busId: 'bus-1', sequence: 1, 
+    name: '', grade: '', busId: buses[0]?.id || 'bus-1', sequence: 1, 
     address: '', fatherPhone: '', motherPhone: '', receiver: '' 
   });
 
@@ -60,7 +84,7 @@ export default function AdminDashboard({
       return {
         studentName: std.name,
         grade: std.grade,
-        busNumber: bus ? bus.number : 'حافلة 12',
+        busNumber: bus ? `${bus.number} (${bus.route})` : 'حافلة 12',
         status: std.status,
         time: new Date().toLocaleTimeString('ar-SA'),
         recordedBy: 'مشرفة البوابة',
@@ -82,13 +106,13 @@ export default function AdminDashboard({
   return (
     <div className="space-y-6">
       
-      {/* تبويبات الإدارة العلوية */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 no-print">
+      {/* شريط التبويبات العلوي للوحة التحكم */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 no-print overflow-x-auto">
         <button
-          onClick={() => setActiveSubTab('overview')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          onClick={() => handleTabChange('overview')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'overview' 
-              ? 'bg-slate-900 text-white shadow-sm' 
+              ? 'bg-slate-900 text-white shadow-md' 
               : 'text-slate-600 hover:bg-slate-200'
           }`}
         >
@@ -97,10 +121,10 @@ export default function AdminDashboard({
         </button>
 
         <button
-          onClick={() => setActiveSubTab('reports')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          onClick={() => handleTabChange('reports')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'reports' 
-              ? 'bg-slate-900 text-white shadow-sm' 
+              ? 'bg-slate-900 text-white shadow-md' 
               : 'text-slate-600 hover:bg-slate-200'
           }`}
         >
@@ -109,10 +133,10 @@ export default function AdminDashboard({
         </button>
 
         <button
-          onClick={() => setActiveSubTab('settings')}
-          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          onClick={() => handleTabChange('settings')}
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'settings' 
-              ? 'bg-slate-900 text-white shadow-sm' 
+              ? 'bg-slate-900 text-white shadow-md' 
               : 'text-slate-600 hover:bg-slate-200'
           }`}
         >
@@ -475,11 +499,11 @@ export default function AdminDashboard({
             </div>
           )}
 
-          {/* قسم إدارة الطاقم */}
+          {/* قسم إدارة الطاقم (سائقين ومشرفات مع ربط الحافلة الإلزامي) */}
           {settingsSubTab === 'staff' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500">قائمة السائقين والمشرفات:</span>
+                <span className="text-xs font-bold text-slate-500">قائمة السائقين والمشرفات والحافلات المسندة:</span>
                 <button
                   onClick={() => setShowAddStaffModal(true)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
@@ -501,34 +525,69 @@ export default function AdminDashboard({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    <tr>
-                      <td className="p-3 font-bold">الكابتن أحمد الشمري</td>
-                      <td className="p-3 font-mono">1000000004</td>
-                      <td className="p-3 font-mono">0501110004</td>
-                      <td className="p-3 font-bold text-emerald-700">سائق حافلة</td>
-                      <td className="p-3">حافلة 12</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-bold">أم أحمد العتيبي</td>
-                      <td className="p-3 font-mono">1000000003</td>
-                      <td className="p-3 font-mono">0501110003</td>
-                      <td className="p-3 font-bold text-blue-700">مرافقة حافلة</td>
-                      <td className="p-3">حافلة 12</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-bold">أ. سارة المنصور</td>
-                      <td className="p-3 font-mono">1000000002</td>
-                      <td className="p-3 font-mono">0501110002</td>
-                      <td className="p-3 font-bold text-purple-700">مشرفة مدرسة</td>
-                      <td className="p-3">جميع الحافلات</td>
-                    </tr>
+                    {staffList && staffList.length > 0 ? staffList.map(st => {
+                      const bus = buses.find(b => b.id === st.busId || b.id === st.assigned_bus_id);
+                      return (
+                        <tr key={st.id} className="hover:bg-slate-50/60">
+                          <td className="p-3 font-bold text-slate-800">{st.full_name || st.name}</td>
+                          <td className="p-3 font-mono text-slate-600">{st.national_id}</td>
+                          <td className="p-3 font-mono text-slate-600">{st.phone}</td>
+                          <td className="p-3 font-bold text-emerald-700">
+                            {st.role === 'driver' ? 'سائق حافلة' : 
+                             st.role === 'attendant' ? 'مرافقة حافلة' : 
+                             st.role === 'school_supervisor' || st.role === 'supervisor' ? 'مشرفة مدرسة' : st.role}
+                          </td>
+                          <td className="p-3">
+                            <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg font-bold border border-emerald-200">
+                              {bus ? `${bus.number} - ${bus.route}` : 'حافلة 12'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    }) : (
+                      <>
+                        <tr>
+                          <td className="p-3 font-bold">الكابتن أحمد الشمري</td>
+                          <td className="p-3 font-mono">1000000004</td>
+                          <td className="p-3 font-mono">0501110004</td>
+                          <td className="p-3 font-bold text-emerald-700">سائق حافلة</td>
+                          <td className="p-3">
+                            <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-200">
+                              حافلة 12 - مسار شمال الرياض
+                            </span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 font-bold">أم أحمد العتيبي</td>
+                          <td className="p-3 font-mono">1000000003</td>
+                          <td className="p-3 font-mono">0501110003</td>
+                          <td className="p-3 font-bold text-blue-700">مرافقة حافلة</td>
+                          <td className="p-3">
+                            <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-bold border border-blue-200">
+                              حافلة 12 - مسار شمال الرياض
+                            </span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="p-3 font-bold">أ. سارة المنصور</td>
+                          <td className="p-3 font-mono">1000000002</td>
+                          <td className="p-3 font-mono">0501110002</td>
+                          <td className="p-3 font-bold text-purple-700">مشرفة مدرسة</td>
+                          <td className="p-3">
+                            <span className="bg-purple-50 text-purple-800 px-2 py-0.5 rounded font-bold border border-purple-200">
+                              جميع الحافلات (بوابة التفويج)
+                            </span>
+                          </td>
+                        </tr>
+                      </>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {/* قسم إدارة الطلاب والترتيب الجغرافي */}
+          {/* قسم إدارة الطلاب والترتيب الجغرافي (مع ربط الحافلة الإلزامي) */}
           {settingsSubTab === 'students' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -551,6 +610,7 @@ export default function AdminDashboard({
                       <th className="p-3">{t('reports.grade')}</th>
                       <th className="p-3">{t('settings.assignedBus')}</th>
                       <th className="p-3">{t('settings.fatherPhone')}</th>
+                      <th className="p-3">{t('settings.motherPhone')}</th>
                       <th className="p-3">العنوان</th>
                     </tr>
                   </thead>
@@ -563,11 +623,12 @@ export default function AdminDashboard({
                           <td className="p-3 font-bold text-slate-800">{std.name}</td>
                           <td className="p-3 text-slate-500">{std.grade}</td>
                           <td className="p-3 font-bold text-slate-700">
-                            <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded">
-                              {bus ? bus.number : 'حافلة 12'}
+                            <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg font-bold border border-emerald-200">
+                              {bus ? `${bus.number} - ${bus.route}` : 'حافلة 12'}
                             </span>
                           </td>
                           <td className="p-3 font-mono text-slate-600">{std.fatherPhone}</td>
+                          <td className="p-3 font-mono text-slate-600">{std.motherPhone}</td>
                           <td className="p-3 text-slate-500">{std.address}</td>
                         </tr>
                       );
@@ -582,14 +643,18 @@ export default function AdminDashboard({
       )}
 
       {/* ========================================================= */}
-      {/* نوافذ الإضافة المنبثقة                                     */}
+      {/* نماذج الإضافة المنبثقة مع القوائم المنسدلة الإلزامية للباصات */}
       {/* ========================================================= */}
 
-      {/* مودال إضافة حافلة */}
+      {/* 1. مودال إضافة حافلة */}
       {showAddBusModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4" dir="rtl">
-            <h3 className="font-bold text-slate-800 text-sm">{t('settings.addBus')}</h3>
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <Bus className="text-emerald-600" size={18} />
+              <span>{t('settings.addBus')}</span>
+            </h3>
+
             <form onSubmit={(e) => {
               e.preventDefault();
               onAddBus({ id: `bus-${Date.now()}`, ...newBus, status: 'active' });
@@ -597,19 +662,23 @@ export default function AdminDashboard({
               setNewBus({ number: '', plate: '', capacity: 25, route: '', districts: '' });
             }} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">رقم الحافلة:</label>
+                <label className="font-bold text-slate-700 block mb-1">رقم الحافلة (إلزامي):</label>
                 <input required placeholder="مثال: حافلة 14" value={newBus.number} onChange={e => setNewBus({...newBus, number: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">رقم اللوحة:</label>
+                <label className="font-bold text-slate-700 block mb-1">رقم اللوحة المرورية (إلزامي):</label>
                 <input required placeholder="مثال: د ر ق 4567" value={newBus.plate} onChange={e => setNewBus({...newBus, plate: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">اسم المسار والأحياء:</label>
+                <label className="font-bold text-slate-700 block mb-1">السعة الاستيعابية (مقاعد):</label>
+                <input type="number" required value={newBus.capacity} onChange={e => setNewBus({...newBus, capacity: parseInt(e.target.value) || 25})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">اسم المسار والأحياء المشمولة:</label>
                 <input required placeholder="مثال: مسار حي الملقا والصحافة" value={newBus.route} onChange={e => setNewBus({...newBus, route: e.target.value, districts: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl">حفظ</button>
+                <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl">حفظ الحافلة</button>
                 <button type="button" onClick={() => setShowAddBusModal(false)} className="px-4 bg-slate-100 text-slate-600 rounded-xl">إلغاء</button>
               </div>
             </form>
@@ -617,39 +686,149 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* مودال إضافة طالب */}
+      {/* 2. مودال إضافة موظف (سائق / مشرفة) مع قائمة منسدلة إجبارية لاختيار الحافلة */}
+      {showAddStaffModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4" dir="rtl">
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <UserCheck className="text-emerald-600" size={18} />
+              <span>{t('settings.addStaff')}</span>
+            </h3>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!newStaff.busId) {
+                alert('الرجاء اختيار الحافلة المخصصة للموظف');
+                return;
+              }
+              onAddStaff({ id: `staff-${Date.now()}`, ...newStaff, full_name: newStaff.name });
+              setShowAddStaffModal(false);
+              setNewStaff({ name: '', national_id: '', phone: '', role: 'driver', busId: buses[0]?.id || 'bus-1' });
+            }} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">الاسم الكامل للموظف:</label>
+                <input required placeholder="مثال: خالد محمد الشمري" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">رقم الهوية الوطنية / الإقامة (10 أرقام):</label>
+                <input required placeholder="10xxxxxxxx" value={newStaff.national_id} onChange={e => setNewStaff({...newStaff, national_id: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">رقم الجوال:</label>
+                <input required placeholder="05xxxxxxxx" value={newStaff.phone} onChange={e => setNewStaff({...newStaff, phone: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">الدور الوظيفي:</label>
+                <select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl font-bold">
+                  <option value="driver">سائق حافلة (Driver)</option>
+                  <option value="attendant">مرافقة حافلة (Attendant / العاملة)</option>
+                  <option value="school_supervisor">مشرفة مدرسة (School Supervisor)</option>
+                </select>
+              </div>
+
+              {/* القائمة المنسدلة الإلزامية لاختيار الحافلة (Select Bus Dropdown) */}
+              <div>
+                <label className="font-bold text-emerald-800 block mb-1 flex items-center gap-1">
+                  <Bus size={14} className="text-emerald-600" />
+                  <span>الحافلة والمسار المخصص (إلزامي):</span>
+                </label>
+                <select 
+                  required
+                  value={newStaff.busId} 
+                  onChange={e => setNewStaff({...newStaff, busId: e.target.value})}
+                  className="w-full p-3 bg-emerald-50/50 border-2 border-emerald-300 text-slate-800 rounded-xl font-bold text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                >
+                  {buses.map(b => (
+                    <option key={b.id} value={b.id}>
+                      🚌 {b.number} - {b.route} ({b.plate})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl">حفظ الموظف</button>
+                <button type="button" onClick={() => setShowAddStaffModal(false)} className="px-4 bg-slate-100 text-slate-600 rounded-xl">إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. مودال إضافة طالب مع قائمة منسدلة إجبارية لاختيار الحافلة */}
       {showAddStudentModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4" dir="rtl">
-            <h3 className="font-bold text-slate-800 text-sm">{t('settings.addStudent')}</h3>
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <Users className="text-emerald-600" size={18} />
+              <span>{t('settings.addStudent')}</span>
+            </h3>
+
             <form onSubmit={(e) => {
               e.preventDefault();
-              onAddStudent({ id: `std-${Date.now()}`, ...newStudent, status: 'boarded', consecutiveAbsence: 0 });
+              if (!newStudent.busId) {
+                alert('الرجاء اختيار الحافلة المخصصة للطالب');
+                return;
+              }
+              onAddStudent({ 
+                id: `std-${Date.now()}`, 
+                ...newStudent, 
+                status: 'boarded', 
+                consecutiveAbsence: 0 
+              });
               setShowAddStudentModal(false);
-              setNewStudent({ name: '', grade: '', busId: 'bus-1', sequence: 1, address: '', fatherPhone: '', motherPhone: '', receiver: '' });
+              setNewStudent({ name: '', grade: '', busId: buses[0]?.id || 'bus-1', sequence: 1, address: '', fatherPhone: '', motherPhone: '', receiver: '' });
             }} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">اسم الطالب رباعي:</label>
+                <label className="font-bold text-slate-700 block mb-1">اسم الطالب رباعي (إلزامي):</label>
                 <input required placeholder="مثال: محمد عبدالله الشمري" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
               </div>
               <div>
                 <label className="font-bold text-slate-700 block mb-1">المرحلة / الصف:</label>
                 <input required placeholder="مثال: الرابع الابتدائي (أ)" value={newStudent.grade} onChange={e => setNewStudent({...newStudent, grade: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
               </div>
+
+              {/* القائمة المنسدلة الإلزامية لاختيار الحافلة (Select Bus Dropdown) */}
+              <div>
+                <label className="font-bold text-emerald-800 block mb-1 flex items-center gap-1">
+                  <Bus size={14} className="text-emerald-600" />
+                  <span>الحافلة المخصصة لنقل الطالب (إلزامي):</span>
+                </label>
+                <select 
+                  required
+                  value={newStudent.busId} 
+                  onChange={e => setNewStudent({...newStudent, busId: e.target.value})}
+                  className="w-full p-3 bg-emerald-50/50 border-2 border-emerald-300 text-slate-800 rounded-xl font-bold text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                >
+                  {buses.map(b => (
+                    <option key={b.id} value={b.id}>
+                      🚌 {b.number} - {b.route} ({b.plate})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">جوال الأب:</label>
-                  <input required placeholder="0500000000" value={newStudent.fatherPhone} onChange={e => setNewStudent({...newStudent, fatherPhone: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                  <input required placeholder="0500000000" value={newStudent.fatherPhone} onChange={e => setNewStudent({...newStudent, fatherPhone: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">تسلسل النزول (geo_order):</label>
-                  <input type="number" required value={newStudent.sequence} onChange={e => setNewStudent({...newStudent, sequence: parseInt(e.target.value) || 1})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                  <input type="number" required value={newStudent.sequence} onChange={e => setNewStudent({...newStudent, sequence: parseInt(e.target.value) || 1})} className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
                 </div>
               </div>
+
               <div>
-                <label className="font-bold text-slate-700 block mb-1">العنوان والحي:</label>
-                <input required placeholder="حي النرجس - شارع 12" value={newStudent.address} onChange={e => setNewStudent({...newStudent, address: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                <label className="font-bold text-slate-700 block mb-1">جوال الأم أو المستلم:</label>
+                <input placeholder="0550000000" value={newStudent.motherPhone} onChange={e => setNewStudent({...newStudent, motherPhone: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
               </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">العنوان والحي بالتفصيل:</label>
+                <input required placeholder="حي النرجس - شارع 12 - فيلا 4" value={newStudent.address} onChange={e => setNewStudent({...newStudent, address: e.target.value})} className="w-full p-2.5 bg-slate-50 border rounded-xl" />
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <button type="submit" className="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl">حفظ الطالب</button>
                 <button type="button" onClick={() => setShowAddStudentModal(false)} className="px-4 bg-slate-100 text-slate-600 rounded-xl">إلغاء</button>
